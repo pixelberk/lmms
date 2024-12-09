@@ -252,12 +252,7 @@ void MidiClipView::mousePressEvent( QMouseEvent * _me )
 	// when mouse button is pressed in pattern mode
 
 	{
-//	get the step number that was clicked on and
-//	do calculations in floats to prevent rounding errors...
-		float tmp = ( ( float(_me->x()) - BORDER_WIDTH ) *
-				float( m_clip -> m_steps ) ) / float(width() - BORDER_WIDTH*2);
-
-		int step = int( tmp );
+		int step = getStepFromPoint(float(_me->x()));
 
 //	debugging to ensure we get the correct step...
 //		qDebug( "Step (%f) %d", tmp, step );
@@ -296,6 +291,9 @@ void MidiClipView::mousePressEvent( QMouseEvent * _me )
 		ClipView::mousePressEvent( _me );
 	}
 }
+
+
+
 
 void MidiClipView::mouseDoubleClickEvent(QMouseEvent *_me)
 {
@@ -370,6 +368,9 @@ static int computeNoteRange(int minKey, int maxKey)
 {
 	return (maxKey - minKey) + 1;
 }
+
+
+
 
 void MidiClipView::paintEvent( QPaintEvent * )
 {
@@ -674,5 +675,28 @@ void MidiClipView::paintEvent( QPaintEvent * )
 	painter.drawPixmap( 0, 0, m_paintPixmap );
 }
 
+
+
+
+//!get the index of the step from the mouse event position
+int MidiClipView::getStepFromPoint(float x)
+{
+//	get the step number that was clicked on and
+//	do calculations in floats to prevent rounding errors...
+		float tmp = ((x - BORDER_WIDTH ) *
+				float( m_clip -> m_steps ) ) / float(width() - BORDER_WIDTH*2);
+
+		int step = int( tmp );
+
+//	debugging to ensure we get the correct step...
+//		qDebug( "Step (%f) %d", tmp, step );
+
+		if( step >= m_clip->m_steps )
+		{
+			qDebug( "Something went wrong in clip.cpp: step %d doesn't exist in clip!", step );
+			return -1;
+		}
+	return step;
+}
 
 } // namespace lmms::gui

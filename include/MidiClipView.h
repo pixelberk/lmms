@@ -103,6 +103,9 @@ private:
 	QStaticText m_staticTextName;
 
 	bool m_legacySEPattern;
+
+	int getStepFromPoint(float x);
+
 } ;
 
 
