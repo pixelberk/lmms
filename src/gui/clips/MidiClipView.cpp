@@ -190,6 +190,18 @@ void MidiClipView::transposeSelection()
 
 
 
+void MidiClipView::repeatStep()
+{
+	int repeatInterval = QInputDialog::getInt(this, "Repeat", "Set repeat interval", 2);
+	m_clip->repeatStep(m_lastClickedStep, repeatInterval);
+
+	Engine::getSong()->setModified();
+	update();
+}
+
+
+
+
 void MidiClipView::constructContextMenu( QMenu * _cm )
 {
 	bool isBeat = m_clip->type() == MidiClip::Type::BeatClip;
@@ -211,7 +223,9 @@ void MidiClipView::constructContextMenu( QMenu * _cm )
 	connect(c, &QAction::triggered, this, &MidiClipView::setGhostInAutomationEditor);
 
 	_cm->insertSeparator(_cm->actions()[3]);
-	_cm->addSeparator();
+	_cm->addSeparator();//add separator right after insert separator seems to be redundant
+
+	_cm->addAction(embed::getIconPixmap("loop_points_on"), tr("Repeat"), this, &MidiClipView::repeatStep);
 
 	_cm->addAction( embed::getIconPixmap( "edit_erase" ),
 			tr( "Clear all notes" ), m_clip, SLOT(clear()));
@@ -246,47 +260,31 @@ void MidiClipView::constructContextMenu( QMenu * _cm )
 void MidiClipView::mousePressEvent( QMouseEvent * _me )
 {
 	bool displayPattern = fixedClips() || (pixelsPerBar() >= 96 && m_legacySEPattern);
-	if (_me->button() == Qt::LeftButton && m_clip->m_clipType == MidiClip::Type::BeatClip && displayPattern
+	// when any mouse button is pressed in pattern mode
+	if (m_clip->m_clipType == MidiClip::Type::BeatClip && displayPattern
 		&& _me->y() > BeatStepButtonOffset && _me->y() < BeatStepButtonOffset + m_stepBtnOff.height())
-
-	// when mouse button is pressed in pattern mode
-
 	{
 		int step = getStepFromPoint(float(_me->x()));
-
-//	debugging to ensure we get the correct step...
-//		qDebug( "Step (%f) %d", tmp, step );
-
-		if( step >= m_clip->m_steps )
+		if (_me->button() == Qt::LeftButton)
 		{
-			qDebug( "Something went wrong in clip.cpp: step %d doesn't exist in clip!", step );
-			return;
-		}
-
-		Note * n = m_clip->noteAtStep( step );
-
-		if( n == nullptr )
-		{
-			m_clip->addStepNote( step );
-		}
-		else // note at step found
-		{
+			Note * n = m_clip->noteAtStep(step);//!< this will be null if the step is off
 			m_clip->addJournalCheckPoint();
-			m_clip->setStep( step, false );
-		}
+			m_clip->setStep(step, n == nullptr);//!<toggle the step
 
-		Engine::getSong()->setModified();
-		update();
+			Engine::getSong()->setModified();
+			update();
 
-		if( getGUI()->pianoRoll()->currentMidiClip() == m_clip )
+			if( getGUI()->pianoRoll()->currentMidiClip() == m_clip )
+			{
+				getGUI()->pianoRoll()->update();
+			}
+		} else if (_me->button() == Qt::RightButton)
 		{
-			getGUI()->pianoRoll()->update();
+			m_lastClickedStep = step;
+			//qDebug("right clicked: %d", step);
 		}
 	}
-	else
-
-	// if not in pattern mode, let parent class handle the event
-
+	else // if not in pattern mode, let parent class handle the event
 	{
 		ClipView::mousePressEvent( _me );
 	}

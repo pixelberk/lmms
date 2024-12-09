@@ -77,6 +77,8 @@ protected slots:
 	void changeName();
 	void transposeSelection();
 
+	void repeatStep();
+
 
 protected:
 	void constructContextMenu( QMenu * ) override;
@@ -103,6 +105,8 @@ private:
 	QStaticText m_staticTextName;
 
 	bool m_legacySEPattern;
+
+	int m_lastClickedStep;
 
 	int getStepFromPoint(float x);
 
